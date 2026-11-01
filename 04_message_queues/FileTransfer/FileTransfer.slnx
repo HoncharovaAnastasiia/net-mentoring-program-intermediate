@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="FileTransfer.Domain/FileTransfer.Domain.csproj" Id="909dcb87-7870-4056-9589-a878501e2940" />
+  <Project Path="FileTransfer.Kafka/FileTransfer.Kafka.csproj" Id="6ac45829-b1a4-49ae-b248-d58d64242fcd" />
   <Project Path="FileTransfer.Shared/FileTransfer.Shared.csproj" Id="6816f9b0-5039-42b6-a7bc-c8bc77fd0a39" />
 </Solution>
