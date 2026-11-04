@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace DataCaptureService.Runtime;
 
-public sealed class FileSender
+public class FileSender
 {
     private readonly IProducer<string, byte[]> producer;
     private readonly string manifestTopic;

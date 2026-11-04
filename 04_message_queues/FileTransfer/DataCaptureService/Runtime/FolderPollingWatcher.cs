@@ -1,6 +1,6 @@
 ﻿namespace DataCaptureService.Runtime;
 
-public sealed class FolderPollingWatcher
+public class FolderPollingWatcher
 {
     private readonly HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
 

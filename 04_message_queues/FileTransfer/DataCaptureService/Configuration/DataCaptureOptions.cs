@@ -1,6 +1,6 @@
 ﻿namespace DataCaptureService.Configuration;
 
-public sealed record DataCaptureOptions
+public record DataCaptureOptions
 {
     public required string InputFolder { get; init; }
     
