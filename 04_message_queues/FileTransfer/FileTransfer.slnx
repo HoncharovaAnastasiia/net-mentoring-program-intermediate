@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Docker/">
+    <File Path="docker-compose.yml" />
+  </Folder>
   <Project Path="DataCaptureService/DataCaptureService.csproj" Id="92b82d4f-2872-4db6-9706-c9e67b0cc6cf" />
   <Project Path="FileTransfer.Domain/FileTransfer.Domain.csproj" Id="909dcb87-7870-4056-9589-a878501e2940" />
   <Project Path="FileTransfer.Kafka/FileTransfer.Kafka.csproj" Id="6ac45829-b1a4-49ae-b248-d58d64242fcd" />
