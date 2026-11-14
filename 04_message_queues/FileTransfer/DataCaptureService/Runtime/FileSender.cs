@@ -9,6 +9,7 @@ namespace DataCaptureService.Runtime;
 public class FileSender
 {
     private readonly IProducer<string, byte[]> producer;
+
     private readonly string manifestTopic;
     private readonly string chunksTopic;
     private readonly string sourceInstanceId;
@@ -27,33 +28,19 @@ public class FileSender
 
         var fileInfo = new FileInfo(filePath);
         var fileId = Guid.NewGuid();
-        var key = KafkaMessageKey.ForFile(fileId);
 
-        var totalBytes = fileInfo.Length;
-        var totalChunks = ChunkCalculator.GetTotalChunks(totalBytes, chunkSizeBytes);
+        long totalBytes = fileInfo.Length;
+        int totalChunks = ChunkCalculator.GetTotalChunks(totalBytes, chunkSizeBytes);
 
-        var fileSha256Hex = await ComputeFileSha256HexAsync(filePath, ct);
+        string key = KafkaMessageKey.ForFile(fileId);
+        string fileSha256Hex = await ComputeFileSha256HexAsync(filePath, ct);
 
-        var manifest = CreateManifest(fileId, fileInfo.Name, totalBytes, chunkSizeBytes, totalChunks, fileSha256Hex);
+        var manifest = new FileManifest(fileId, fileInfo.Name, totalBytes, chunkSizeBytes, totalChunks, fileSha256Hex, sourceInstanceId);
 
         await ProduceAsync(manifestTopic, key, manifest, ct);
         await ProduceChunksAsync(filePath, fileId, key, totalChunks, chunkSizeBytes, ct);
 
         producer.Flush(TimeSpan.FromSeconds(30));
-    }
-
-    private FileManifest CreateManifest(Guid fileId, string originalFileName, long totalBytes, int chunkSizeBytes, int totalChunks, string fileSha256Hex)
-    {
-        return new FileManifest
-        {
-            FileId = fileId,
-            OriginalFileName = originalFileName,
-            TotalBytes = totalBytes,
-            ChunkSizeBytes = chunkSizeBytes,
-            TotalChunks = totalChunks,
-            FileSha256Hex = fileSha256Hex,
-            SourceInstanceId = sourceInstanceId
-        };
     }
 
     private Task<DeliveryResult<string, byte[]>> ProduceAsync<T>(string topic, string key, T message, CancellationToken ct)
@@ -70,26 +57,19 @@ public class FileSender
         await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         var buffer = new byte[chunkSizeBytes];
-        var chunkIndex = 0;
+        int chunkIndex = 0;
 
         while (true)
         {
             ct.ThrowIfCancellationRequested();
 
-            var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), ct);
+            int read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), ct);
             if (read == 0) break;
 
             var payload = new byte[read];
             Buffer.BlockCopy(buffer, 0, payload, 0, read);
 
-            await ProduceAsync(chunksTopic, key, new FileChunk
-            {
-                FileId = fileId,
-                ChunkIndex = chunkIndex,
-                TotalChunks = totalChunks,
-                ChunkSha256Hex = ComputeSha256Hex(payload),
-                ChunkBytes = payload
-            }, ct);
+            await ProduceAsync(chunksTopic, key, new FileChunk(fileId, chunkIndex, totalChunks, ComputeSha256Hex(payload), payload), ct);
             chunkIndex++;
         }
 

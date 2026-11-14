@@ -1,5 +1,6 @@
 ﻿using DataCaptureService.Configuration;
 using DataCaptureService.Runtime;
+using DataCaptureService.Watching;
 using FileTransfer.Domain.Constants;
 using FileTransfer.Kafka.Configuration;
 using FileTransfer.Kafka.Factories;
@@ -16,8 +17,7 @@ string chunksTopic = configuration["Topics:ChunksTopic"] ?? TopicNames.Chunks;
 using var producer = new KafkaProducerFactory(kafka).Create();
 
 var sender = new FileSender(producer, manifestTopic, chunksTopic, Environment.MachineName);
-var watcher = new FolderPollingWatcher();
-var worker = new CaptureWorker(options, watcher, sender);
+var worker = new CaptureWorker(options, new FolderPollingWatcher(), sender);
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };

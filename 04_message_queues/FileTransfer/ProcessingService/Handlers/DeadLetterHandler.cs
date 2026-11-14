@@ -21,16 +21,14 @@ public class DeadLetterHandler
 
     public Task PublishAsync(ConsumeResult<string, byte[]> result, Exception ex)
     {
-        return publisher.PublishAsync(new DeadLetterRecord
-        {
-            SourceTopic = result.Topic,
-            Reason = $"{ex.GetType().Name}: {ex.Message}",
-            FileId = TryExtractFileId(result),
-            ChunkIndex = TryExtractChunkIndex(result),
-            SourcePartition = result.Partition.Value,
-            SourceOffset = result.Offset.Value,
-            OriginalPayload = TryGetUtf8Text(result.Message.Value)
-        });
+        return publisher.PublishAsync(new DeadLetterRecord(
+            result.Topic,
+            result.Partition.Value,
+            result.Offset.Value,
+            $"{ex.GetType().Name}: {ex.Message}",
+            TryExtractFileId(result),
+            TryExtractChunkIndex(result),
+            TryGetUtf8Text(result.Message.Value)));
     }
 
     private Guid? TryExtractFileId(ConsumeResult<string, byte[]> result)

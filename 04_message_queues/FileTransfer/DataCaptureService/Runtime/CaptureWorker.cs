@@ -1,4 +1,6 @@
 ﻿using DataCaptureService.Configuration;
+using DataCaptureService.Watching;
+using FileTransfer.Shared.Generators;
 
 namespace DataCaptureService.Runtime;
 
@@ -38,6 +40,11 @@ public class CaptureWorker
         {
             Directory.CreateDirectory(options.SentFolder);
         }
+
+        if (!string.IsNullOrWhiteSpace(options.FailedFolder))
+        {
+            Directory.CreateDirectory(options.FailedFolder);
+        }
     }
 
     private async Task ProcessFileSafeAsync(string filePath, CancellationToken ct)
@@ -53,10 +60,24 @@ public class CaptureWorker
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to send '{filePath}'. {ex.GetType().Name}: {ex.Message}");
+            MoveToFailedIfConfigured(filePath);
         }
-        finally
+    }
+
+    private void MoveToFailedIfConfigured(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(options.FailedFolder)) return;
+
+        var targetPath = Path.Combine(options.FailedFolder, Path.GetFileName(filePath));
+        targetPath = UniquePathGenerator.EnsureUniqueFilePath(targetPath);
+
+        try
         {
-            watcher.MarkAsProcessed(filePath);
+            File.Move(filePath, targetPath, overwrite: false);
+        }
+        catch (IOException)
+        {
+            Console.WriteLine($"Failed to move '{filePath}' to '{targetPath}'.");
         }
     }
 
@@ -69,9 +90,11 @@ public class CaptureWorker
 
     private void MoveToSentIfConfigured(string filePath)
     {
-        if (string.IsNullOrWhiteSpace(options.SentFolder)) return;
-
-        var targetPath = Path.Combine(options.SentFolder, Path.GetFileName(filePath));
-        File.Move(filePath, targetPath, overwrite: true);
+        if (!string.IsNullOrWhiteSpace(options.SentFolder))
+        {
+            var targetPath = Path.Combine(options.SentFolder, Path.GetFileName(filePath));
+            targetPath = UniquePathGenerator.EnsureUniqueFilePath(targetPath);
+            File.Move(filePath, targetPath, overwrite: false);
+        }
     }
 }
