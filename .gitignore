@@ -426,3 +426,4 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+/05_analyzing_and_profiling_tools/DumpHomework/MyCalculator.dmp
