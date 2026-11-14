@@ -1,4 +1,5 @@
 ﻿using FileTransfer.Domain.Messages;
+using FileTransfer.Shared.Generators;
 using System.Security.Cryptography;
 
 namespace ProcessingService.Transfers;
@@ -40,7 +41,7 @@ public static class FileReassembler
         Directory.CreateDirectory(outputFolder);
 
         var safeName = MakeSafeFileName(originalFileName);
-        var targetPath = EnsureUniquePath(Path.Combine(outputFolder, safeName));
+        var targetPath = UniquePathGenerator.EnsureUniqueFilePath(Path.Combine(outputFolder, safeName));
 
         File.Move(tempFilePath, targetPath);
     }
@@ -53,22 +54,5 @@ public static class FileReassembler
         }
 
         return fileName;
-    }
-
-    private static string EnsureUniquePath(string path)
-    {
-        if (!File.Exists(path)) return path;
-
-        var dir = Path.GetDirectoryName(path)!;
-        var name = Path.GetFileNameWithoutExtension(path);
-        var ext = Path.GetExtension(path);
-
-        for (int suffixNumber = 1; suffixNumber < int.MaxValue; suffixNumber++)
-        {
-            var candidate = Path.Combine(dir, $"{name}_{suffixNumber}{ext}");
-            if (!File.Exists(candidate)) return candidate;
-        }
-
-        throw new IOException("Unable to generate unique file name.");
     }
 }
