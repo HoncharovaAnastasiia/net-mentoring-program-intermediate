@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace Task1;
+namespace PasswordHashing;
 
 public static class PasswordHashGenerator
 {
@@ -8,7 +8,7 @@ public static class PasswordHashGenerator
     private const int SaltSize = 16;
     private const int DerivedSize = 20;
 
-    public static string GeneratePasswordHashUsingSalt(string passwordText, byte[] salt)
+    public static string GeneratePasswordHashUsingSaltOptimised(string passwordText, byte[] salt)
     {
         if (salt.Length < SaltSize)
         {
@@ -22,6 +22,25 @@ public static class PasswordHashGenerator
 
         saltSpan.CopyTo(hashBytes[..SaltSize]);
         Rfc2898DeriveBytes.Pbkdf2(passwordText, saltSpan, destination, Iterate, HashAlgorithmName.SHA1);
+
+        var passwordHash = Convert.ToBase64String(hashBytes);
+
+        return passwordHash;
+    }
+
+    public static string GeneratePasswordHashUsingSalt(string passwordText, byte[] salt)
+    {
+        var iterate = 10000;
+
+        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
+
+        byte[] hash = pbkdf2.GetBytes(20);
+
+        byte[] hashBytes = new byte[36];
+
+        Array.Copy(salt, 0, hashBytes, 0, 16);
+
+        Array.Copy(hash, 0, hashBytes, 16, 20);
 
         var passwordHash = Convert.ToBase64String(hashBytes);
 
