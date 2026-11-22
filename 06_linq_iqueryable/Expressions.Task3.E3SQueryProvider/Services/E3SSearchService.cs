@@ -36,7 +36,29 @@ namespace Expressions.Task3.E3SQueryProvider.Services
 
             return JsonConvert.DeserializeObject<FtsResponse<T>>(resultString).Items.Select(t => t.Data);
         }
-        
+
+        public IEnumerable SearchFts(Type type, IEnumerable<string> statements, int start = 0, int limit = 0)
+        {
+            Type finalType = typeof(FtsResponse<>).MakeGenericType(type);
+            var items = finalType.GetProperty("items");
+
+            var requestGenerator = new FtsRequestGenerator(_baseAddress);
+            Uri request = requestGenerator.GenerateRequestUrl(type, statements, start, limit);
+
+            string resultString = _httpClient.GetStringAsync(request).Result;
+            object result = JsonConvert.DeserializeObject(resultString, finalType);
+
+            var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(type)) as IList;
+
+            foreach (object item in (IEnumerable)items.GetValue(result))
+            {
+                var data = item.GetType().GetProperty("data");
+                list.Add(data.GetValue(item));
+            }
+
+            return list;
+        }
+
         public IEnumerable SearchFts(Type type, string query, int start = 0, int limit = 0)
         {
             Type finalType = typeof(FtsResponse<>).MakeGenericType(type);

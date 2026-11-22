@@ -17,7 +17,10 @@ namespace Expressions.Task3.E3SQueryProvider.QueryProvider
 
         public IQueryable CreateQuery(Expression expression)
         {
-            throw new NotImplementedException();
+            Type elementType = TypeHelper.GetElementType(expression.Type);
+            Type queryType = typeof(E3SQuery<>).MakeGenericType(elementType);
+
+            return (IQueryable)Activator.CreateInstance(queryType, expression, this);
         }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -27,17 +30,19 @@ namespace Expressions.Task3.E3SQueryProvider.QueryProvider
 
         public object Execute(Expression expression)
         {
-            throw new NotImplementedException();
+            if (expression == null) throw new ArgumentNullException(nameof(expression));
+
+            Type itemType = TypeHelper.GetElementType(expression.Type);
+            var translator = new ExpressionToFtsRequestTranslator();
+
+            var statements = translator.Translate(expression);
+
+            return _e3SClient.SearchFts(itemType, statements);
         }
 
         public TResult Execute<TResult>(Expression expression)
         {
-            Type itemType = TypeHelper.GetElementType(expression.Type);
-
-            var translator = new ExpressionToFtsRequestTranslator();
-            string queryString = translator.Translate(expression);
-
-            return (TResult)_e3SClient.SearchFts(itemType, queryString);
+            return (TResult)Execute(expression);
         }
     }
 }

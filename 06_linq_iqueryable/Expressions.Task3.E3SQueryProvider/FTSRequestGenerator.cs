@@ -28,26 +28,43 @@ namespace Expressions.Task3.E3SQueryProvider
             return GenerateRequestUrl(typeof(T), query, start, limit);
         }
 
+        public Uri GenerateRequestUrl<T>(IEnumerable<string> statements, int start = 0, int limit = 10)
+        {
+            return GenerateRequestUrl(typeof(T), statements, start, limit);
+        }
+
         public Uri GenerateRequestUrl(Type type, string query = "*", int start = 0, int limit = 10)
         {
-            string metaTypeName = GetMetaTypeName(type);
-
-            var ftsQueryRequest = new FtsQueryRequest
+            var ftsQueryRequest = new FtsQueryRequest(query)
             {
-                Statements = new List<Statement>
-                {
-                    new Statement {
-                        Query = query
-                    }
-                },
                 Start = start,
                 Limit = limit
             };
 
+            return GetUrl(type, ftsQueryRequest);
+        }
+
+        public Uri GenerateRequestUrl(Type type, IEnumerable<string> statements, int start = 0, int limit = 10)
+        {
+            var ftsQueryRequest = new FtsQueryRequest(statements)
+            {
+                Start = start,
+                Limit = limit
+            };
+
+            return GetUrl(type, ftsQueryRequest);
+        }
+
+        #endregion
+
+        private Uri GetUrl(Type type, FtsQueryRequest ftsQueryRequest)
+        {
+            string metaTypeName = GetMetaTypeName(type);
+
             var ftsQueryRequestString = JsonConvert.SerializeObject(ftsQueryRequest);
 
             var uri = BindByName($"{_baseAddress}{_FTSSearchTemplate}",
-                new Dictionary<string, string>()
+                new Dictionary<string, string>
                 {
                     { "metaType", metaTypeName },
                     { "query", ftsQueryRequestString }
@@ -55,8 +72,6 @@ namespace Expressions.Task3.E3SQueryProvider
 
             return uri;
         }
-
-        #endregion
 
         private static Uri BindByName(string baseAddress, Dictionary<string, string> queryParams)
             => new Uri(QueryHelpers.AddQueryString(baseAddress, queryParams));
